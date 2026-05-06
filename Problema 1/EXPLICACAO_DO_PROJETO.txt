@@ -355,6 +355,8 @@ Historico de alteracoes
 - Adicionado teste r = 0,5 e angulo = 45 graus, gravado em TEST_POLAR_45_HALF.
 - Criado arquivo .gitignore na pasta raiz do projeto para preparar o versionamento com Git/GitHub.
 - Criado README.md na pasta raiz com resumo do projeto, estado atual e arquivos principais.
+- Inicializado repositorio Git local na pasta raiz do projeto.
+- Criado commit inicial aa98752 com os arquivos fonte e documentacao do projeto.
 
 
 Preparacao para GitHub
@@ -386,18 +388,35 @@ Ele resume:
 - como abrir o projeto
 
 Importante:
-O comando git ainda nao esta disponivel no computador, pois o PowerShell retornou:
-"git nao e reconhecido como nome de cmdlet".
+Foi instalado o GitHub Desktop. O comando git ainda nao apareceu diretamente
+no PATH do PowerShell, mas foi encontrado um git.exe interno em:
+C:\ProgramData\wguar\GitHubDesktop\app-3.5.8\resources\app\git\cmd\git.exe
 
-Portanto, ainda nao foi possivel executar:
-- git init
-- git add
-- git commit
-- git remote add
-- git push
+Esse executavel foi usado para criar o repositorio local.
 
-Para concluir a conexao com o GitHub, sera necessario instalar o Git para
-Windows ou disponibilizar o git no PATH do sistema.
+Comandos ja executados:
+- git init -b main
+- git add .
+- git commit -m "Organiza projeto CORDIC para ATmega328P"
+
+Commit inicial criado:
+aa98752 - Organiza projeto CORDIC para ATmega328P
+
+Arquivos versionados no commit inicial:
+- .gitignore
+- README.md
+- Problema 1/EXPLICACAO_DO_PROJETO.txt
+- Problema 1/Problema 1.asmproj
+- Problema 1/Problema 1.componentinfo.xml
+- Problema 1/cordic_core.inc
+- Problema 1/cordic_tables.inc
+- Problema 1/main.asm
+
+Ainda falta publicar o repositorio no GitHub online.
+Isso pode ser feito pelo GitHub Desktop usando a opcao Publish repository,
+ou criando um repositorio vazio no GitHub e depois adicionando o remote com:
+git remote add origin URL_DO_REPOSITORIO
+git push -u origin main
 
 
 Erro Relative branch out of reach
