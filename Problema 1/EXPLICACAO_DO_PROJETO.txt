@@ -1,0 +1,493 @@
+EXPLICACAO DO PROJETO - PROBLEMA 1 CORDIC
+==========================================
+
+Objetivo deste arquivo
+----------------------
+Este TXT serve como um registro simples do que ja foi feito no projeto.
+Sempre que uma alteracao ou adicao importante for feita nos arquivos do
+projeto, este arquivo tambem deve ser atualizado com a explicacao.
+
+
+Contexto do trabalho
+--------------------
+O problema pede a implementacao, em assembly para o ATmega328/ATmega328P,
+de variacoes do algoritmo CORDIC.
+
+O formato numerico escolhido foi Q2.14.
+Isso significa que cada numero usa 16 bits:
+- 2 bits para a parte inteira/sinal
+- 14 bits para a parte fracionaria
+
+Na pratica, para converter um numero real para Q2.14, multiplicamos por
+2^14, ou seja, por 16384.
+
+Exemplo:
+45 graus em radianos = pi/4 ~= 0,785398
+0,785398 * 16384 ~= 12868
+Logo, 45 graus em Q2.14 foi definido como 12868, ou 0x3244.
+
+
+Arquivos organizados ate agora
+------------------------------
+O projeto foi dividido em tres arquivos principais:
+
+1. main.asm
+Arquivo principal do programa.
+
+Ele faz:
+- inclui o arquivo do ATmega328P: m328pdef.inc
+- define o vetor de reset em .org 0x0000
+- chama a rotina init_stack
+- chama a rotina init_test_state
+- carrega o angulo de 45 graus em Q2.14
+- chama a rotina cordic_rotate_q214
+- entra em um loop infinito no final
+
+Importante:
+Os includes cordic_tables.inc e cordic_core.inc foram colocados no final
+do main.asm. Isso foi necessario para evitar erro de overlap em .cseg.
+
+
+2. cordic_tables.inc
+Arquivo reservado para constantes e tabelas.
+
+Ele contem:
+- constantes do formato Q2.14
+- numero de iteracoes do CORDIC
+- ganho K do CORDIC circular
+- inverso do ganho K
+- alguns angulos uteis em Q2.14
+- enderecos de SRAM usados para debug
+- tabela atan(2^-i), em radianos e no formato Q2.14
+
+Constantes importantes:
+- Q14_ONE = 0x4000
+- CORDIC_ITERATIONS = 15
+- CORDIC_GAIN_Q14 = 9949
+- CORDIC_ANGLE_45_Q14 = 12868
+
+Tabela importante:
+cordic_atan_table_q14
+
+Essa tabela sera usada quando implementarmos o laco iterativo do CORDIC.
+
+
+3. cordic_core.inc
+Arquivo reservado para as rotinas do projeto.
+
+Ele contem:
+- convencao inicial de registradores
+- rotina init_stack
+- rotina init_test_state
+- esqueleto da rotina cordic_rotate_q214
+
+Convencao atual de registradores:
+- r20:r21 = angulo z
+- r22:r23 = x
+- r24:r25 = y
+- r16:r19 = temporarios
+- r26:r27 = ponteiro X
+- r30:r31 = ponteiro Z
+
+Rotina init_stack:
+Inicializa a pilha usando RAMEND.
+Isso e necessario para que chamadas com rcall e retornos com ret funcionem
+corretamente.
+
+Rotina init_test_state:
+Zera alguns enderecos de SRAM usados para observar valores no simulador.
+
+Rotina cordic_rotate_q214:
+Ainda nao implementa o CORDIC completo.
+Por enquanto, ela apenas prepara o estado inicial:
+- x = CORDIC_GAIN_Q14
+- y = 0
+- z = angulo recebido em r20:r21
+
+Depois, grava esses valores na SRAM para facilitar a verificacao no simulador.
+
+
+Erro encontrado e correcao
+--------------------------
+Ao compilar pela primeira vez, apareceu erro:
+Overlap in .cseg
+
+Significado:
+O assembler tentou colocar duas partes do programa no mesmo endereco da
+memoria de programa.
+
+Causa:
+Os arquivos cordic_tables.inc e cordic_core.inc estavam sendo incluidos no
+inicio do main.asm. Como o .include funciona como se o conteudo do arquivo
+fosse colado naquele ponto, a tabela e as rotinas acabaram sendo colocadas
+antes do vetor de reset em .org 0x0000.
+
+Correcao:
+Os includes foram movidos para o final do main.asm:
+
+main_loop:
+    rjmp main_loop
+
+.include "cordic_tables.inc"
+.include "cordic_core.inc"
+
+Depois disso, o projeto compilou sem erros.
+
+
+Estado esperado do programa neste momento
+-----------------------------------------
+Neste momento, ainda nao esperamos calcular seno e cosseno.
+O objetivo atual e apenas validar a estrutura inicial.
+
+Quando o programa roda, esperamos:
+
+1. Entrar em RESET.
+2. Inicializar a pilha.
+3. Zerar a area de debug.
+4. Carregar 45 graus em Q2.14 em r20:r21.
+5. Entrar em cordic_rotate_q214.
+6. Carregar x com o ganho K.
+7. Zerar y.
+8. Gravar x, y e z na SRAM.
+9. Ficar parado no loop final.
+
+
+Valores esperados
+-----------------
+CORDIC_ANGLE_45_Q14 = 12868 decimal = 0x3244
+CORDIC_GAIN_Q14 = 9949 decimal = 0x26DD
+
+Como o AVR trabalha com byte baixo primeiro:
+
+r20 = 0x44
+r21 = 0x32
+
+r22 = 0xDD
+r23 = 0x26
+
+r24 = 0x00
+r25 = 0x00
+
+
+Enderecos de debug na SRAM
+--------------------------
+Os valores tambem sao gravados na SRAM:
+
+DBG_X_OUT = 0x0100
+DBG_Y_OUT = 0x0102
+DBG_Z_OUT = 0x0104
+DBG_ITER  = 0x0106
+
+Depois de executar a rotina cordic_rotate_q214, a memoria a partir de 0x0100
+deve mostrar aproximadamente:
+
+0x0100: DD
+0x0101: 26
+0x0102: 00
+0x0103: 00
+0x0104: 44
+0x0105: 32
+0x0106: 00
+
+Ou, em sequencia:
+DD 26 00 00 44 32 00
+
+Depois da implementacao da bateria de testes, a rotina tambem grava resultados
+em blocos separados:
+
+0x0120 = resultado para 0 graus
+0x0128 = resultado para 30 graus
+0x0130 = resultado para 45 graus
+0x0138 = resultado para 60 graus
+0x0140 = resultado para 90 graus
+
+Cada bloco usa o mesmo formato:
+byte 0 e 1 = x, que representa cos(angulo)
+byte 2 e 3 = y, que representa sin(angulo)
+byte 4 e 5 = z final, isto e, erro residual do angulo
+byte 6 = quantidade de iteracoes executadas
+
+
+Como verificar no Microchip Studio
+----------------------------------
+1. Abrir o projeto no Microchip Studio.
+2. Compilar com Build > Rebuild Solution.
+3. Iniciar debug pelo simulador.
+4. Usar Step Into para acompanhar a execucao.
+5. Observar os registradores r20 a r25.
+6. Abrir a janela de memoria e ir para o endereco 0x0100.
+7. Conferir se os bytes batem com os valores esperados.
+
+
+Proximo passo tecnico
+---------------------
+O proximo passo sera testar a rotina cordic_rotate_q214 ja com o laco real
+de iteracoes.
+
+Ao final:
+- x devera representar cos(z_original)
+- y devera representar sin(z_original)
+
+
+Implementacao real da rotina cordic_rotate_q214
+-----------------------------------------------
+Foi implementada a primeira versao real da rotina circular do CORDIC.
+
+A rotina agora:
+- inicia x = K
+- inicia y = 0
+- recebe z como angulo de entrada
+- repete 15 iteracoes
+- le a tabela atan(2^-i)
+- calcula x_shift = x >> i
+- calcula y_shift = y >> i
+- decide o sentido da rotacao pelo sinal de z
+- atualiza x, y e z
+- grava o resultado final na SRAM de debug
+
+As atualizacoes seguem esta regra:
+
+Se z >= 0:
+x = x - (y >> i)
+y = y + (x >> i)
+z = z - atan(2^-i)
+
+Se z < 0:
+x = x + (y >> i)
+y = y - (x >> i)
+z = z + atan(2^-i)
+
+Tambem foi criada a rotina arithmetic_shift_right_16.
+Ela desloca um numero assinado de 16 bits para a direita, preservando o sinal.
+Isso e importante porque x e y podem se tornar negativos em outras entradas.
+
+Foram adicionados enderecos internos de SRAM:
+- CORDIC_X
+- CORDIC_Y
+- CORDIC_Z
+- CORDIC_X_SHIFT
+- CORDIC_Y_SHIFT
+- CORDIC_ATAN
+
+Esses enderecos facilitam a depuracao, porque podemos observar valores
+intermediarios no simulador.
+
+Para o teste atual com 45 graus, esperamos aproximadamente:
+cos(45 graus) ~= 0,7071
+sin(45 graus) ~= 0,7071
+
+Convertendo para Q2.14:
+0,7071 * 16384 ~= 11585
+
+Em hexadecimal:
+11585 decimal ~= 0x2D41
+
+Como os bytes aparecem em ordem little endian, esperamos algo proximo de:
+0x0100: 41 2D   ; x ~= cos(45)
+0x0102: 41 2D   ; y ~= sin(45)
+
+Pode haver diferenca de poucos valores por arredondamento da tabela e das
+iteracoes.
+
+
+Bateria de testes para seno e cosseno
+-------------------------------------
+O main.asm foi alterado para chamar cordic_rotate_q214 com cinco angulos:
+- 0 graus
+- 30 graus
+- 45 graus
+- 60 graus
+- 90 graus
+
+Cada chamada salva o resultado em uma regiao propria da SRAM.
+Isso facilita comparar os valores sem precisar mudar o codigo a cada teste.
+
+Enderecos:
+- TEST_ANGLE_0_RESULT  = 0x0120
+- TEST_ANGLE_30_RESULT = 0x0128
+- TEST_ANGLE_45_RESULT = 0x0130
+- TEST_ANGLE_60_RESULT = 0x0138
+- TEST_ANGLE_90_RESULT = 0x0140
+
+Valores esperados aproximados em Q2.14:
+
+0 graus:
+cos ~= 1,0000 -> 0x4000
+sin ~= 0,0000 -> 0x0000
+
+30 graus:
+cos ~= 0,8660 -> 0x376C
+sin ~= 0,5000 -> 0x2000
+
+45 graus:
+cos ~= 0,7071 -> 0x2D41
+sin ~= 0,7071 -> 0x2D41
+
+60 graus:
+cos ~= 0,5000 -> 0x2000
+sin ~= 0,8660 -> 0x376C
+
+90 graus:
+cos ~= 0,0000 -> 0x0000
+sin ~= 1,0000 -> 0x4000
+
+Os resultados reais podem variar alguns pontos por causa dos arredondamentos
+do ponto fixo e da tabela atan.
+
+
+Historico de alteracoes
+-----------------------
+2026-05-06:
+- Criada a organizacao inicial do projeto em main.asm, cordic_tables.inc e cordic_core.inc.
+- Criado arquivo cordic_tables.inc para concentrar constantes e tabela de angulos.
+- Criado arquivo cordic_core.inc para concentrar rotinas do CORDIC.
+- Ajustado main.asm para chamar as rotinas iniciais e carregar 45 graus como teste.
+- Corrigido erro de Overlap in .cseg movendo os includes de cordic_tables.inc e cordic_core.inc para o final do main.asm.
+- Criado este arquivo EXPLICACAO_DO_PROJETO.txt para documentar o que foi feito e orientar os proximos passos.
+- Implementada a primeira versao real da rotina cordic_rotate_q214 com 15 iteracoes.
+- Adicionada a rotina arithmetic_shift_right_16 para deslocamento aritmetico de 16 bits.
+- Adicionados enderecos internos de SRAM para x, y, z, shifts e valor atual da tabela atan.
+- Corrigido erro "Relative branch out of reach" trocando o retorno condicional do laco por brsh cordic_rotate_done seguido de rjmp cordic_rotate_loop.
+- Adicionada bateria de testes no main.asm para 0, 30, 45, 60 e 90 graus.
+- Adicionados enderecos TEST_ANGLE_*_RESULT para guardar resultados separados na SRAM.
+- Adicionada rotina q214_mul_signed para multiplicar dois valores Q2.14.
+- Adicionada rotina cordic_polar_to_rect_q214 para converter polar em retangular.
+- Adicionado teste r = 0,5 e angulo = 45 graus, gravado em TEST_POLAR_45_HALF.
+- Criado arquivo .gitignore na pasta raiz do projeto para preparar o versionamento com Git/GitHub.
+- Criado README.md na pasta raiz com resumo do projeto, estado atual e arquivos principais.
+
+
+Preparacao para GitHub
+----------------------
+Foi iniciada a preparacao do projeto para ser colocado no GitHub.
+
+Arquivos criados na pasta raiz:
+- .gitignore
+- README.md
+
+O .gitignore serve para impedir que arquivos temporarios do Microchip Studio
+e saidas de compilacao sejam enviados ao GitHub.
+
+Exemplos de arquivos/pastas ignorados:
+- .vs/
+- Debug/
+- Release/
+- *.obj
+- *.hex
+- *.lss
+- *.map
+- *.tmp
+
+O README.md serve como apresentacao inicial do repositorio no GitHub.
+Ele resume:
+- objetivo do projeto
+- estado atual
+- arquivos principais
+- como abrir o projeto
+
+Importante:
+O comando git ainda nao esta disponivel no computador, pois o PowerShell retornou:
+"git nao e reconhecido como nome de cmdlet".
+
+Portanto, ainda nao foi possivel executar:
+- git init
+- git add
+- git commit
+- git remote add
+- git push
+
+Para concluir a conexao com o GitHub, sera necessario instalar o Git para
+Windows ou disponibilizar o git no PATH do sistema.
+
+
+Erro Relative branch out of reach
+---------------------------------
+Depois da primeira implementacao real do CORDIC, apareceu o erro:
+Relative branch out of reach
+
+Esse erro acontece porque instrucoes condicionais como brlo, brsh, breq e
+brne so conseguem saltar para enderecos proximos. A rotina cordic_rotate_q214
+ficou grande, entao o salto condicional brlo cordic_rotate_loop ficou longe
+demais.
+
+Correcao feita:
+
+Antes:
+cpi r28, CORDIC_ITERATIONS
+brlo cordic_rotate_loop
+
+Depois:
+cpi r28, CORDIC_ITERATIONS
+brsh cordic_rotate_done
+rjmp cordic_rotate_loop
+
+Assim, o salto condicional so pula para uma etiqueta proxima, e o salto longo
+de volta para o inicio do laco e feito com rjmp.
+
+
+Multiplicacao Q2.14
+-------------------
+Foi adicionada a rotina q214_mul_signed.
+
+Ela recebe:
+- r22:r23 = primeiro numero Q2.14
+- r24:r25 = segundo numero Q2.14
+
+E devolve:
+- r22:r23 = resultado Q2.14
+
+Por que precisa deslocar 14 bits?
+
+Quando multiplicamos dois numeros Q2.14, cada um deles ja foi multiplicado
+por 2^14. Entao o produto fica multiplicado por 2^28.
+
+Para voltar ao formato Q2.14, precisamos dividir por 2^14.
+Em assembly, dividir por 2^14 e o mesmo que deslocar 14 bits para a direita.
+
+Exemplo:
+0,5 em Q2.14 = 0x2000 = 8192
+0,7071 em Q2.14 ~= 0x2D41 = 11585
+
+Produto inteiro:
+8192 * 11585 = 94904320
+
+Voltando para Q2.14:
+94904320 >> 14 = 5792
+
+5792 / 16384 ~= 0,3535
+
+
+Polar para retangular
+---------------------
+Foi adicionada a rotina cordic_polar_to_rect_q214.
+
+Ela recebe:
+- r18:r19 = raio r
+- r20:r21 = angulo
+
+Ela calcula primeiro:
+- cos(angulo)
+- sin(angulo)
+
+Usando a rotina cordic_rotate_q214.
+
+Depois calcula:
+x = r * cos(angulo)
+y = r * sin(angulo)
+
+usando q214_mul_signed.
+
+O primeiro teste implementado foi:
+r = 0,5
+angulo = 45 graus
+
+Valor esperado:
+x ~= 0,3535
+y ~= 0,3535
+
+Em Q2.14:
+x ~= 0x16A1
+y ~= 0x16A0
+
+Na SRAM, em TEST_POLAR_45_HALF = 0x0148, esperamos algo proximo de:
+A1 16 A0 16

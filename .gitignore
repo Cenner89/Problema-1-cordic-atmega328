@@ -1,0 +1,27 @@
+# Microchip/Atmel Studio temporary files
+.vs/
+Debug/
+Release/
+
+# Build outputs
+*.obj
+*.hex
+*.elf
+*.eep
+*.lss
+*.map
+*.tmp
+*.o
+*.d
+
+# User/local IDE state
+*.atsuo
+*.user
+*.suo
+
+# Logs and temporary files
+*.log
+*.bak
+*.orig
+*.swp
+Thumbs.db
