@@ -92,6 +92,47 @@ RESET:
     sts TEST_POLAR_45_HALF + 2, r24
     sts TEST_POLAR_45_HALF + 3, r25
 
+    ; Testes adicionais para validar polar -> retangular.
+    ldi r18, low(Q14_ONE)
+    ldi r19, high(Q14_ONE)
+    ldi r20, low(CORDIC_ANGLE_0_Q14)
+    ldi r21, high(CORDIC_ANGLE_0_Q14)
+    rcall cordic_polar_to_rect_q214
+    sts TEST_POLAR_0_ONE, r22
+    sts TEST_POLAR_0_ONE + 1, r23
+    sts TEST_POLAR_0_ONE + 2, r24
+    sts TEST_POLAR_0_ONE + 3, r25
+
+    ldi r18, low(Q14_ONE)
+    ldi r19, high(Q14_ONE)
+    ldi r20, low(CORDIC_ANGLE_90_Q14)
+    ldi r21, high(CORDIC_ANGLE_90_Q14)
+    rcall cordic_polar_to_rect_q214
+    sts TEST_POLAR_90_ONE, r22
+    sts TEST_POLAR_90_ONE + 1, r23
+    sts TEST_POLAR_90_ONE + 2, r24
+    sts TEST_POLAR_90_ONE + 3, r25
+
+    ldi r18, low(Q14_HALF)
+    ldi r19, high(Q14_HALF)
+    ldi r20, low(CORDIC_ANGLE_30_Q14)
+    ldi r21, high(CORDIC_ANGLE_30_Q14)
+    rcall cordic_polar_to_rect_q214
+    sts TEST_POLAR_30_HALF, r22
+    sts TEST_POLAR_30_HALF + 1, r23
+    sts TEST_POLAR_30_HALF + 2, r24
+    sts TEST_POLAR_30_HALF + 3, r25
+
+    ldi r18, low(Q14_HALF)
+    ldi r19, high(Q14_HALF)
+    ldi r20, low(CORDIC_ANGLE_60_Q14)
+    ldi r21, high(CORDIC_ANGLE_60_Q14)
+    rcall cordic_polar_to_rect_q214
+    sts TEST_POLAR_60_HALF, r22
+    sts TEST_POLAR_60_HALF + 1, r23
+    sts TEST_POLAR_60_HALF + 2, r24
+    sts TEST_POLAR_60_HALF + 3, r25
+
 main_loop:
     rjmp main_loop
 

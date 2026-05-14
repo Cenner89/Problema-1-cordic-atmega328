@@ -49,6 +49,10 @@
 .equ TEST_ANGLE_60_RESULT   = 0x0138
 .equ TEST_ANGLE_90_RESULT   = 0x0140
 .equ TEST_POLAR_45_HALF     = 0x0148
+.equ TEST_POLAR_0_ONE       = 0x0150
+.equ TEST_POLAR_90_ONE      = 0x0154
+.equ TEST_POLAR_30_HALF     = 0x0158
+.equ TEST_POLAR_60_HALF     = 0x015C
 
 ; Variaveis internas para polar -> retangular
 .equ POLAR_RADIUS           = 0x0160

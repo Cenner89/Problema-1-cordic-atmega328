@@ -510,3 +510,39 @@ y ~= 0x16A0
 
 Na SRAM, em TEST_POLAR_45_HALF = 0x0148, esperamos algo proximo de:
 A1 16 A0 16
+
+Foram adicionados mais quatro testes de polar -> retangular:
+
+TEST_POLAR_0_ONE = 0x0150
+r = 1,0 e angulo = 0 graus
+Esperado: x ~= 1,0 e y ~= 0,0
+
+TEST_POLAR_90_ONE = 0x0154
+r = 1,0 e angulo = 90 graus
+Esperado: x ~= 0,0 e y ~= 1,0
+
+TEST_POLAR_30_HALF = 0x0158
+r = 0,5 e angulo = 30 graus
+Esperado: x ~= 0,4330 e y ~= 0,25
+
+TEST_POLAR_60_HALF = 0x015C
+r = 0,5 e angulo = 60 graus
+Esperado: x ~= 0,25 e y ~= 0,4330
+
+Bytes esperados aproximados na SRAM:
+- 0x0148: A1 16 A0 16
+- 0x0150: FF 3F 04 00
+- 0x0154: 04 00 FF 3F
+- 0x0158: B7 1B FF 0F
+- 0x015C: FF 0F B7 1B
+
+Cada teste grava quatro bytes:
+byte 0 e 1 = x
+byte 2 e 3 = y
+
+Lembrando que cada valor aparece em ordem little endian:
+primeiro o byte baixo, depois o byte alto.
+
+Historico adicional:
+- Adicionada bateria ampliada de testes para polar -> retangular.
+- Novos resultados gravados em 0x0150, 0x0154, 0x0158 e 0x015C.
