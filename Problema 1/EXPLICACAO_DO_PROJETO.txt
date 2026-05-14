@@ -2,7 +2,7 @@ DATABOOK DO PROJETO - PROBLEMA 1 CORDIC
 ========================================
 
 Ultima atualizacao deste documento:
-2026-05-14 18:22:33 -03:00
+2026-05-14 18:37:40 -03:00
 
 
 1. Objetivo do databook
@@ -450,9 +450,46 @@ Fluxo combinado para novas alteracoes:
 6. git push
 
 
-17. Status atual do projeto
+17. Build e testes automaticos
+------------------------------
+Foram adicionados scripts na pasta tools/ para reduzir a dependencia de testes
+manuais no Microchip Studio.
+
+tools/build.ps1
+- chama o assembler oficial avrasm2.exe
+- compila Problema 1/main.asm
+- gera arquivos em CliBuild/
+- falha se houver erro de assembly
+
+Comando:
+powershell -ExecutionPolicy Bypass -File tools/build.ps1
+
+Saidas geradas:
+- CliBuild/Problema1.hex
+- CliBuild/Problema1.lss
+- CliBuild/Problema1.map
+
+tools/test-cordic.js
+- chama tools/build.ps1
+- carrega o arquivo HEX gerado
+- emula o subconjunto de instrucoes AVR usado pelo projeto
+- executa o programa ate o loop final
+- confere automaticamente a SRAM esperada
+
+Comando:
+node tools/test-cordic.js
+
+Testes automaticos verificados:
+- seno/cosseno para 0, 30, 45, 60 e 90 graus
+- polar -> retangular para os casos definidos na bateria de testes
+
+Essa abordagem nao substitui completamente o debug visual do Microchip Studio,
+mas permite validar build e resultados principais diretamente pelo terminal.
+
+
+18. Status atual do projeto
 ---------------------------
-Estado em 2026-05-14 18:22:33 -03:00:
+Estado em 2026-05-14 18:37:40 -03:00:
 
 - CORDIC circular funcionando para seno/cosseno
 - testes de 0, 30, 45, 60 e 90 graus implementados
@@ -460,13 +497,14 @@ Estado em 2026-05-14 18:22:33 -03:00:
 - polar -> retangular implementado
 - bateria de testes polar -> retangular implementada
 - projeto conectado ao GitHub
-- ultimo commit remoto antes desta reorganizacao: ee25dde
+- build automatico por avrasm2.exe implementado
+- teste automatico por emulador AVR simplificado implementado
 
 Proximo passo tecnico sugerido:
 Implementar retangular -> polar usando CORDIC em modo vetorizacao.
 
 
-18. Sugestoes para evoluir este databook
+19. Sugestoes para evoluir este databook
 ----------------------------------------
 Para transformar este arquivo em um databook mais completo do projeto, as
 proximas secoes recomendadas sao:
@@ -485,7 +523,7 @@ Quando o relatorio IEEE for escrito, este databook pode virar a fonte de
 informacoes para as secoes de metodologia, implementacao, testes e resultados.
 
 
-19. Historico cronologico de alteracoes
+20. Historico cronologico de alteracoes
 ---------------------------------------
 Observacao:
 As datas e horarios abaixo usam o historico de commits do Git quando
@@ -533,3 +571,12 @@ Reorganizacao do databook do projeto
 - adicionadas secoes numeradas
 - consolidado historico cronologico com datas e horarios
 - adicionadas sugestoes para evolucao da documentacao
+
+2026-05-14
+Build e testes automaticos
+- criado tools/build.ps1 para compilar o projeto via avrasm2.exe
+- criado tools/test-cordic.js para emular o programa e verificar a SRAM esperada
+- adicionada entrada CliBuild/ ao .gitignore
+- documentada a nova rotina de validacao automatica
+- atualizado README.md com comandos de build e teste por terminal
+- validado node tools/test-cordic.js com 10 verificacoes aprovadas

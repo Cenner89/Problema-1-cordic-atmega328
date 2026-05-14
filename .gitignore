@@ -4,6 +4,7 @@ Debug/
 Release/
 
 # Build outputs
+CliBuild/
 *.obj
 *.hex
 *.elf

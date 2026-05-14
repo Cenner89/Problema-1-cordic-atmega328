@@ -26,6 +26,23 @@ microcontrolador ATmega328P, usando formato numerico Q2.14.
 Abra a solucao/projeto no Microchip Studio a partir da pasta do projeto e compile
 em modo Debug usando o simulador do ATmega328P.
 
+## Build e testes por terminal
+
+Para compilar usando o assembler oficial do Microchip/Atmel Studio:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/build.ps1
+```
+
+Para compilar e validar automaticamente os resultados principais na SRAM:
+
+```powershell
+node tools/test-cordic.js
+```
+
+O teste automatico valida os casos de seno/cosseno e polar para retangular
+ja definidos em `main.asm`.
+
 ## Observacao sobre Git
 
 Este repositorio deve versionar os arquivos fonte e de documentacao.
