@@ -546,3 +546,40 @@ primeiro o byte baixo, depois o byte alto.
 Historico adicional:
 - Adicionada bateria ampliada de testes para polar -> retangular.
 - Novos resultados gravados em 0x0150, 0x0154, 0x0158 e 0x015C.
+
+
+Reorganizacao da bateria de testes
+----------------------------------
+O arquivo main.asm foi reorganizado para deixar os testes em uma estrutura
+unica e mais clara.
+
+Antes, os testes estavam todos diretamente dentro de RESET, em uma sequencia
+longa. Agora RESET apenas inicializa o sistema e chama run_test_suite.
+
+Nova estrutura:
+
+RESET:
+- chama init_stack
+- chama init_test_state
+- chama run_test_suite
+- entra em main_loop
+
+run_test_suite:
+- chama run_circular_rotation_tests
+- chama run_polar_to_rect_tests
+
+run_circular_rotation_tests:
+- executa os testes de seno/cosseno para 0, 30, 45, 60 e 90 graus
+- grava os resultados de 0x0120 ate 0x0140
+
+run_polar_to_rect_tests:
+- executa os testes de polar -> retangular
+- grava os resultados de 0x0148 ate 0x015C
+
+Essa mudanca nao altera a matematica nem os enderecos dos resultados.
+Ela apenas organiza melhor o codigo para facilitar leitura, manutencao e
+novas adicoes.
+
+Historico adicional:
+- Reorganizado main.asm em run_test_suite, run_circular_rotation_tests e run_polar_to_rect_tests.
+- Mantidos os mesmos enderecos de SRAM ja validados nos testes anteriores.
