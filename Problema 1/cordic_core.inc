@@ -181,6 +181,67 @@ cordic_rotate_done:
     sts DBG_Z_OUT + 1, r21
     ret
 
+; ------------------------------------------------------------
+; cordic_vectoring_q214 (Retangular -> Polar)
+; ------------------------------------------------------------
+cordic_vectoring_q214:
+    clr r20
+    clr r21     ; Inicializa z = 0 (ângulo acumulado) 
+    sts CORDIC_X, r22
+    sts CORDIC_X + 1, r23
+    sts CORDIC_Y, r24
+    sts CORDIC_Y + 1, r25
+    sts CORDIC_Z, r20
+    sts CORDIC_Z + 1, r21
+
+    ldi r30, low(cordic_atan_table_q14 * 2)
+    ldi r31, high(cordic_atan_table_q14 * 2)
+    clr r28     ; i = 0
+
+cordic_vect_loop:
+    lpm r16, Z+
+    lpm r17, Z+
+    sts CORDIC_ATAN, r16
+    sts CORDIC_ATAN + 1, r17
+
+    ; Calcula shifts (reaproveitando a rotina) 
+    lds r18, CORDIC_X
+    lds r19, CORDIC_X + 1
+    mov r16, r28
+    rcall arithmetic_shift_right_16
+    sts CORDIC_X_SHIFT, r18
+    sts CORDIC_X_SHIFT + 1, r19
+
+    lds r18, CORDIC_Y
+    lds r19, CORDIC_Y + 1
+    mov r16, r28
+    rcall arithmetic_shift_right_16
+    sts CORDIC_Y_SHIFT, r18
+    sts CORDIC_Y_SHIFT + 1, r19
+
+    ; Decisão de rotação baseada no SINAL de Y (r25) [cite: 39]
+    lds r25, CORDIC_Y + 1
+    sbrc r25, 7
+    rjmp vect_positive  ; Se Y < 0, gira positivo
+
+vect_negative: ; Se Y >= 0, gira negativo
+    ; x = x + y_shift, y = y - x_shift, z = z - atan
+    rcall update_vect_neg ; (criei essa sub-rotina de soma/sub)
+    rjmp vect_next
+
+vect_positive: ; Se Y < 0, gira positivo
+    ; x = x - y_shift, y = y + x_shift, z = z + atan
+    rcall update_vect_pos
+
+vect_next:
+    inc r28
+    cpi r28, CORDIC_ITERATIONS
+    brsh cordic_vect_done
+    rjmp cordic_vect_loop
+
+cordic_vect_done:
+    ret
+
 ; -----------------------------
 ; arithmetic_shift_right_16
 ; Entrada:
@@ -336,4 +397,136 @@ cordic_polar_to_rect_q214:
     mov r25, r23
     lds r22, POLAR_X
     lds r23, POLAR_X + 1
+    ret
+
+
+; --- ROTINAS DE ATUALIZAÇÃO PARA MODO VETORIAL ---
+
+update_vect_neg:
+    ; x = x + y_shift
+    lds r22, CORDIC_X
+    lds r23, CORDIC_X + 1
+    lds r18, CORDIC_Y_SHIFT
+    lds r19, CORDIC_Y_SHIFT + 1
+    add r22, r18
+    adc r23, r19
+    sts CORDIC_X, r22
+    sts CORDIC_X + 1, r23
+    ; y = y - x_shift
+    lds r24, CORDIC_Y
+    lds r25, CORDIC_Y + 1
+    lds r18, CORDIC_X_SHIFT
+    lds r19, CORDIC_X_SHIFT + 1
+    sub r24, r18
+    sbc r25, r19
+    sts CORDIC_Y, r24
+    sts CORDIC_Y + 1, r25
+    ; z = z - atan
+    lds r20, CORDIC_Z
+    lds r21, CORDIC_Z + 1
+    lds r18, CORDIC_ATAN
+    lds r19, CORDIC_ATAN + 1
+    sub r20, r18
+    sbc r21, r19
+    sts CORDIC_Z, r20
+    sts CORDIC_Z + 1, r21
+    ret
+
+update_vect_pos:
+    ; x = x - y_shift
+    lds r22, CORDIC_X
+    lds r23, CORDIC_X + 1
+    lds r18, CORDIC_Y_SHIFT
+    lds r19, CORDIC_Y_SHIFT + 1
+    sub r22, r18
+    sbc r23, r19
+    sts CORDIC_X, r22
+    sts CORDIC_X + 1, r23
+    ; y = y + x_shift
+    lds r24, CORDIC_Y
+    lds r25, CORDIC_Y + 1
+    lds r18, CORDIC_X_SHIFT
+    lds r19, CORDIC_X_SHIFT + 1
+    add r24, r18
+    adc r25, r19
+    sts CORDIC_Y, r24
+    sts CORDIC_Y + 1, r25
+    ; z = z + atan
+    lds r20, CORDIC_Z
+    lds r21, CORDIC_Z + 1
+    lds r18, CORDIC_ATAN
+    lds r19, CORDIC_ATAN + 1
+    add r20, r18
+    adc r21, r19
+    sts CORDIC_Z, r20
+    sts CORDIC_Z + 1, r21
+    ret
+
+; ------------------------------------------------------------
+; cordic_div_q214 (Calcula z = y/x)
+; Entrada: r24:r25 = Numerador (y), r22:r23 = Denominador (x)
+; Saida: r20:r21 = Quociente (z)
+; ------------------------------------------------------------
+cordic_div_q214:
+    clr r20
+    clr r21     ; z = 0
+    sts CORDIC_X, r22
+    sts CORDIC_X + 1, r23
+    sts CORDIC_Y, r24
+    sts CORDIC_Y + 1, r25
+    sts CORDIC_Z, r20
+    sts CORDIC_Z + 1, r21
+
+    ldi r30, low(cordic_linear_table_q14 * 2)
+    ldi r31, high(cordic_linear_table_q14 * 2)
+    clr r28     ; contador i
+
+div_loop:
+    ; Guardamos o valor da tabela (2^-i) logo aqui para nao precisar reler
+    lpm r14, Z+
+    lpm r15, Z+
+    
+    ; x_shift = x >> i
+    lds r18, CORDIC_X
+    lds r19, CORDIC_X + 1
+    mov r16, r28
+    rcall arithmetic_shift_right_16
+    
+    ; Testa sinal de Y para decidir subtracao ou soma
+    lds r25, CORDIC_Y + 1
+    sbrc r25, 7
+    rjmp div_y_neg
+
+div_y_pos:
+    ; y = y - x_shift
+    lds r24, CORDIC_Y
+    lds r25, CORDIC_Y + 1
+    sub r24, r18
+    sbc r25, r19
+    sts CORDIC_Y, r24
+    sts CORDIC_Y + 1, r25
+    ; z = z + (valor que guardamos no r14:r15)
+    add r20, r14
+    adc r21, r15
+    rjmp div_next
+
+div_y_neg:
+    ; y = y + x_shift
+    lds r24, CORDIC_Y
+    lds r25, CORDIC_Y + 1
+    add r24, r18
+    adc r25, r19
+    sts CORDIC_Y, r24
+    sts CORDIC_Y + 1, r25
+    ; z = z - (valor que guardamos no r14:r15)
+    sub r20, r14
+    sbc r21, r15
+
+div_next:
+    inc r28
+    cpi r28, 15 ; CORDIC_ITERATIONS
+    brsh div_done
+    rjmp div_loop
+
+div_done:
     ret

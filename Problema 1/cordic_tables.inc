@@ -49,10 +49,6 @@
 .equ TEST_ANGLE_60_RESULT   = 0x0138
 .equ TEST_ANGLE_90_RESULT   = 0x0140
 .equ TEST_POLAR_45_HALF     = 0x0148
-.equ TEST_POLAR_0_ONE       = 0x0150
-.equ TEST_POLAR_90_ONE      = 0x0154
-.equ TEST_POLAR_30_HALF     = 0x0158
-.equ TEST_POLAR_60_HALF     = 0x015C
 
 ; Variaveis internas para polar -> retangular
 .equ POLAR_RADIUS           = 0x0160
@@ -66,6 +62,18 @@
 ; Q2.14, uso no modo circular
 ; -----------------------------
 .cseg
+; --- NOVAS DEFINIÇÕES PARA A PRÓXIMA ETAPA ---
+.equ TEST_VECT_RESULT       = 0x0170 ; Salva Angulo e Magnitude (8 bytes) 
+.equ TEST_DIV_RESULT        = 0x0178 ; Salva Quociente (2 bytes) 
+
+; Tabela atanh(2^-i) para modo hiperbolico (Q2.14)
+; Necessária para calcular Raiz Quadrada e Funções Exponenciais 
+cordic_atanh_table_q14:
+    .dw 8989    ; atanh(2^-1)
+    .dw 4145    ; atanh(2^-2)
+    .dw 2055    ; atanh(2^-3)
+    .dw 1025    ; atanh(2^-4) - Lembrar de repetir esta iteração!
+    .dw 512     ; atanh(2^-5)
 cordic_atan_table_q14:
     .dw 12868    ; atan(2^0)   = 0.7853981634
     .dw 7596     ; atan(2^-1)  = 0.4636476090
@@ -82,3 +90,26 @@ cordic_atan_table_q14:
     .dw 4        ; atan(2^-12) = 0.0002441406
     .dw 2        ; atan(2^-13) = 0.0001220703
     .dw 1        ; atan(2^-14) = 0.0000610352
+
+
+; --- Complemento para Divisao (Modo Linear) ---
+
+
+.cseg
+; Tabela de potencias de 2^-i em Q2.14
+cordic_linear_table_q14:
+    .dw 16384   ; 2^0
+    .dw 8192    ; 2^-1
+    .dw 4096    ; 2^-2
+    .dw 2048    ; 2^-3
+    .dw 1024    ; 2^-4
+    .dw 512     ; 2^-5
+    .dw 256     ; 2^-6
+    .dw 128     ; 2^-7
+    .dw 64      ; 2^-8
+    .dw 32      ; 2^-9
+    .dw 16      ; 2^-10
+    .dw 8       ; 2^-11
+    .dw 4       ; 2^-12
+    .dw 2       ; 2^-13
+    .dw 1       ; 2^-14
