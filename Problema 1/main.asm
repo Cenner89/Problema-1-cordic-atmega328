@@ -6,7 +6,7 @@
 ; Arquivo principal:
 ; - inicializa pilha
 ; - prepara um ponto de entrada limpo
-; - chama rotinas de teste do CORDIC
+; - executa a bateria de testes do CORDIC
 ; ============================================================
 
 .cseg
@@ -16,9 +16,32 @@
 RESET:
     rcall init_stack
     rcall init_test_state
+    rcall run_test_suite
 
-    ; Bateria inicial de testes da rotina circular.
-    ; Cada teste grava x, y, z e numero de iteracoes na SRAM.
+main_loop:
+    rjmp main_loop
+
+; ============================================================
+; Bateria geral de testes
+; ============================================================
+
+run_test_suite:
+    rcall run_circular_rotation_tests
+    rcall run_polar_to_rect_tests
+    rcall run_vectoring_tests
+    rcall run_division_tests
+    ret
+
+; -----------------------------
+; Testes CORDIC circular
+; Saida de cada teste:
+;   byte 0 e 1 = x = cos(angulo)
+;   byte 2 e 3 = y = sin(angulo)
+;   byte 4 e 5 = z final
+;   byte 6     = numero de iteracoes
+; -----------------------------
+run_circular_rotation_tests:
+    ; 0 graus -> TEST_ANGLE_0_RESULT
     ldi r20, low(CORDIC_ANGLE_0_Q14)
     ldi r21, high(CORDIC_ANGLE_0_Q14)
     rcall cordic_rotate_q214
@@ -31,6 +54,7 @@ RESET:
     lds r16, DBG_ITER
     sts TEST_ANGLE_0_RESULT + 6, r16
 
+    ; 30 graus -> TEST_ANGLE_30_RESULT
     ldi r20, low(CORDIC_ANGLE_30_Q14)
     ldi r21, high(CORDIC_ANGLE_30_Q14)
     rcall cordic_rotate_q214
@@ -43,6 +67,7 @@ RESET:
     lds r16, DBG_ITER
     sts TEST_ANGLE_30_RESULT + 6, r16
 
+    ; 45 graus -> TEST_ANGLE_45_RESULT
     ldi r20, low(CORDIC_ANGLE_45_Q14)
     ldi r21, high(CORDIC_ANGLE_45_Q14)
     rcall cordic_rotate_q214
@@ -55,6 +80,7 @@ RESET:
     lds r16, DBG_ITER
     sts TEST_ANGLE_45_RESULT + 6, r16
 
+    ; 60 graus -> TEST_ANGLE_60_RESULT
     ldi r20, low(CORDIC_ANGLE_60_Q14)
     ldi r21, high(CORDIC_ANGLE_60_Q14)
     rcall cordic_rotate_q214
@@ -67,6 +93,7 @@ RESET:
     lds r16, DBG_ITER
     sts TEST_ANGLE_60_RESULT + 6, r16
 
+    ; 90 graus -> TEST_ANGLE_90_RESULT
     ldi r20, low(CORDIC_ANGLE_90_Q14)
     ldi r21, high(CORDIC_ANGLE_90_Q14)
     rcall cordic_rotate_q214
@@ -78,10 +105,16 @@ RESET:
     sts TEST_ANGLE_90_RESULT + 5, r21
     lds r16, DBG_ITER
     sts TEST_ANGLE_90_RESULT + 6, r16
+    ret
 
-    ; Teste polar -> retangular:
-    ; r = 0,5 em Q2.14 e angulo = 45 graus.
-    ; Resultado esperado: x ~= 0,3535 e y ~= 0,3535.
+; -----------------------------
+; Testes polar -> retangular
+; Saida de cada teste:
+;   byte 0 e 1 = x = r * cos(angulo)
+;   byte 2 e 3 = y = r * sin(angulo)
+; -----------------------------
+run_polar_to_rect_tests:
+    ; r = 0,5 | angulo = 45 graus -> TEST_POLAR_45_HALF
     ldi r18, low(Q14_HALF)
     ldi r19, high(Q14_HALF)
     ldi r20, low(CORDIC_ANGLE_45_Q14)
@@ -92,33 +125,89 @@ RESET:
     sts TEST_POLAR_45_HALF + 2, r24
     sts TEST_POLAR_45_HALF + 3, r25
 
-	; --- NOVO TESTE: RETANGULAR PARA POLAR ---
-    ; Entrada: x = 0.7071 (0x2D41), y = 0.7071 (0x2D41)
-    ; Resultado esperado: z ~= 45 graus (12868)
+    ; r = 1,0 | angulo = 0 graus -> TEST_POLAR_0_ONE
+    ldi r18, low(Q14_ONE)
+    ldi r19, high(Q14_ONE)
+    ldi r20, low(CORDIC_ANGLE_0_Q14)
+    ldi r21, high(CORDIC_ANGLE_0_Q14)
+    rcall cordic_polar_to_rect_q214
+    sts TEST_POLAR_0_ONE, r22
+    sts TEST_POLAR_0_ONE + 1, r23
+    sts TEST_POLAR_0_ONE + 2, r24
+    sts TEST_POLAR_0_ONE + 3, r25
+
+    ; r = 1,0 | angulo = 90 graus -> TEST_POLAR_90_ONE
+    ldi r18, low(Q14_ONE)
+    ldi r19, high(Q14_ONE)
+    ldi r20, low(CORDIC_ANGLE_90_Q14)
+    ldi r21, high(CORDIC_ANGLE_90_Q14)
+    rcall cordic_polar_to_rect_q214
+    sts TEST_POLAR_90_ONE, r22
+    sts TEST_POLAR_90_ONE + 1, r23
+    sts TEST_POLAR_90_ONE + 2, r24
+    sts TEST_POLAR_90_ONE + 3, r25
+
+    ; r = 0,5 | angulo = 30 graus -> TEST_POLAR_30_HALF
+    ldi r18, low(Q14_HALF)
+    ldi r19, high(Q14_HALF)
+    ldi r20, low(CORDIC_ANGLE_30_Q14)
+    ldi r21, high(CORDIC_ANGLE_30_Q14)
+    rcall cordic_polar_to_rect_q214
+    sts TEST_POLAR_30_HALF, r22
+    sts TEST_POLAR_30_HALF + 1, r23
+    sts TEST_POLAR_30_HALF + 2, r24
+    sts TEST_POLAR_30_HALF + 3, r25
+
+    ; r = 0,5 | angulo = 60 graus -> TEST_POLAR_60_HALF
+    ldi r18, low(Q14_HALF)
+    ldi r19, high(Q14_HALF)
+    ldi r20, low(CORDIC_ANGLE_60_Q14)
+    ldi r21, high(CORDIC_ANGLE_60_Q14)
+    rcall cordic_polar_to_rect_q214
+    sts TEST_POLAR_60_HALF, r22
+    sts TEST_POLAR_60_HALF + 1, r23
+    sts TEST_POLAR_60_HALF + 2, r24
+    sts TEST_POLAR_60_HALF + 3, r25
+    ret
+
+; -----------------------------
+; Teste retangular -> polar
+; Entrada:
+;   x ~= 0,7071
+;   y ~= 0,7071
+; Esperado:
+;   angulo ~= 45 graus
+;   magnitude ~= 1,0
+; -----------------------------
+run_vectoring_tests:
     ldi r22, low(11585)
     ldi r23, high(11585)
     ldi r24, low(11585)
     ldi r25, high(11585)
     rcall cordic_vectoring_q214
-    sts TEST_VECT_RESULT, r20      ; Salva Angulo (Z)
+    sts TEST_VECT_RESULT, r20
     sts TEST_VECT_RESULT + 1, r21
-    sts TEST_VECT_RESULT + 2, r22  ; Salva Magnitude (X)
+    sts TEST_VECT_RESULT + 2, r22
     sts TEST_VECT_RESULT + 3, r23
+    ret
 
-	; --- TESTE DA DIVISAO (Modo Linear) ---
-    ; Calcula 1.0 / 2.0 = 0.5
-    ; Q2.14: 1.0 = 0x4000, 2.0 = 0x8000
-    ; Esperado: 0.5 = 0x2000 (8192)
-    ldi r24, low(0x4000)
-    ldi r25, high(0x4000) ; Numerador
-    ldi r22, low(0x8000)
-    ldi r23, high(0x8000) ; Denominador
+; -----------------------------
+; Teste divisao linear
+; Entrada:
+;   numerador = 0,5
+;   denominador = 1,0
+; Esperado:
+;   quociente ~= 0,5
+; -----------------------------
+run_division_tests:
+    ldi r24, low(Q14_HALF)
+    ldi r25, high(Q14_HALF)
+    ldi r22, low(Q14_ONE)
+    ldi r23, high(Q14_ONE)
     rcall cordic_div_q214
     sts TEST_DIV_RESULT, r20
     sts TEST_DIV_RESULT + 1, r21
-
-main_loop:
-    rjmp main_loop
+    ret
 
 .include "cordic_tables.inc"
 .include "cordic_core.inc"

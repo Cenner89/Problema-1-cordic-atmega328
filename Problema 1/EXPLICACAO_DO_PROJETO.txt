@@ -1,8 +1,8 @@
-DATABOOK DO PROJETO - PROBLEMA 1 CORDIC
+﻿DATABOOK DO PROJETO - PROBLEMA 1 CORDIC
 ========================================
 
 Ultima atualizacao deste documento:
-2026-05-14 18:37:40 -03:00
+2026-06-02 10:53:00 -03:00
 
 
 1. Objetivo do databook
@@ -581,13 +581,25 @@ Build e testes automaticos
 - atualizado README.md com comandos de build e teste por terminal
 - validado node tools/test-cordic.js com 10 verificacoes aprovadas
 
+2026-06-02 10:53:00 -0300
+Revisao das alteracoes do colega e correcao da suite
+- aplicado pull com commits do colega para modo vetorial e divisao linear
+- confirmado build com avrasm2.exe sem erros e sem warnings
+- restaurada a estrutura unica da bateria de testes no main.asm
+- restaurados os testes adicionais de polar -> retangular em 0x0150, 0x0154, 0x0158 e 0x015C
+- corrigido sinal acumulado em cordic_vectoring_q214 para retornar angulo positivo no caso x=y=0,7071
+- reescalada a magnitude do modo vetorial multiplicando o resultado por K
+- ajustado teste de divisao para usar valores representaveis em Q2.14: 0,5 / 1,0
+- ampliado tools/test-cordic.js para validar retangular -> polar e divisao linear
+- validado test runner com 12 verificacoes aprovadas
+
 2026-05-18
-Integração do Modo Vetorial (Retangular->Polar) e Divisão Linear
-- Desenvolvida e integrada a rotina cordic_vectoring_q214 para conversão de coordenadas retangulares para polares.
-- Corrigido o desvio de convergência do vetor através do ajuste no teste do bit de sinal de CORDIC_Y, garantindo a rotação correta para zerar a coordenada Y.
-- Implementada a rotina cordic_div_q214 para execução de divisão no modo linear do CORDIC, mantendo o denominador X fixo.
-- Adicionada a tabela cordic_linear_table_q14 contendo as potências de 2^-i para suporte às subtrações do modo linear.
-- Identificada restrição de hardware no ATmega328P que gerava o erro "Wrong number of operands" ao tentar usar o pré-decremento (-Z) com a instrução LPM; o laço foi refatorado para utilizar os registradores temporários r14 e r15.
+Integracao do Modo Vetorial (Retangular->Polar) e Divisao Linear
+- Desenvolvida e integrada a rotina cordic_vectoring_q214 para conversao de coordenadas retangulares para polares.
+- Corrigido o desvio de convergencia do vetor atraves do ajuste no teste do bit de sinal de CORDIC_Y, garantindo a rotacao correta para zerar a coordenada Y.
+- Implementada a rotina cordic_div_q214 para execucao de divisao no modo linear do CORDIC, mantendo o denominador X fixo.
+- Adicionada a tabela cordic_linear_table_q14 contendo as potencias de 2^-i para suporte as subtracoes do modo linear.
+- Identificada restricao de hardware no ATmega328P que gerava o erro "Wrong number of operands" ao tentar usar o pre-decremento (-Z) com a instrucao LPM; o laco foi refatorado para utilizar os registradores temporarios r14 e r15.
 - Eliminado o conflito de duplicidade "Invalid redefinition" para a constante TEST_DIV_RESULT no arquivo cordic_tables.inc.
-- Padronizado o ambiente de simulação e depuração diretamente no Microchip Studio nativo para contornar instabilidades de plugins de terceiros.
-- Validados os novos testes diretamente na data IRAM da SRAM: modo vetorial no endereço 0x0170 (Z em 0xCDBD / aprox. -45° e X em 0x6968 com ganho An) e divisão linear no endereço 0x0178 (resultado em 0x1FFF, apresentando o desvio esperado de 1 LSB por truncamento de shift aritmético ASR, com 99,98% de precisão).
+- Padronizado o ambiente de simulacao e depuracao diretamente no Microchip Studio nativo para contornar instabilidades de plugins de terceiros.
+- Validados os novos testes diretamente na data IRAM da SRAM: modo vetorial no endereco 0x0170 (Z em 0xCDBD / aprox. -45 graus e X em 0x6968 com ganho An) e divisao linear no endereco 0x0178 (resultado em 0x1FFF, apresentando o desvio esperado de 1 LSB por truncamento de shift aritmetico ASR, com 99,98% de precisao).

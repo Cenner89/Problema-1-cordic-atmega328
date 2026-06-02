@@ -49,6 +49,10 @@
 .equ TEST_ANGLE_60_RESULT   = 0x0138
 .equ TEST_ANGLE_90_RESULT   = 0x0140
 .equ TEST_POLAR_45_HALF     = 0x0148
+.equ TEST_POLAR_0_ONE       = 0x0150
+.equ TEST_POLAR_90_ONE      = 0x0154
+.equ TEST_POLAR_30_HALF     = 0x0158
+.equ TEST_POLAR_60_HALF     = 0x015C
 
 ; Variaveis internas para polar -> retangular
 .equ POLAR_RADIUS           = 0x0160
@@ -62,17 +66,17 @@
 ; Q2.14, uso no modo circular
 ; -----------------------------
 .cseg
-; --- NOVAS DEFINIÇÕES PARA A PRÓXIMA ETAPA ---
-.equ TEST_VECT_RESULT       = 0x0170 ; Salva Angulo e Magnitude (8 bytes) 
+; --- NOVAS DEFINICOES PARA A PROXIMA ETAPA ---
+.equ TEST_VECT_RESULT       = 0x0170 ; Salva Angulo e Magnitude (4 bytes)
 .equ TEST_DIV_RESULT        = 0x0178 ; Salva Quociente (2 bytes) 
 
 ; Tabela atanh(2^-i) para modo hiperbolico (Q2.14)
-; Necessária para calcular Raiz Quadrada e Funções Exponenciais 
+; NecessÃ¡ria para calcular Raiz Quadrada e FunÃ§Ãµes Exponenciais
 cordic_atanh_table_q14:
     .dw 8989    ; atanh(2^-1)
     .dw 4145    ; atanh(2^-2)
     .dw 2055    ; atanh(2^-3)
-    .dw 1025    ; atanh(2^-4) - Lembrar de repetir esta iteração!
+    .dw 1025    ; atanh(2^-4) - Lembrar de repetir esta iteraÃ§Ã£o!
     .dw 512     ; atanh(2^-5)
 cordic_atan_table_q14:
     .dw 12868    ; atan(2^0)   = 0.7853981634

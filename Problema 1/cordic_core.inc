@@ -186,7 +186,7 @@ cordic_rotate_done:
 ; ------------------------------------------------------------
 cordic_vectoring_q214:
     clr r20
-    clr r21     ; Inicializa z = 0 (‚ngulo acumulado) 
+    clr r21     ; Inicializa z = 0 (√¢ngulo acumulado)
     sts CORDIC_X, r22
     sts CORDIC_X + 1, r23
     sts CORDIC_Y, r24
@@ -219,7 +219,7 @@ cordic_vect_loop:
     sts CORDIC_Y_SHIFT, r18
     sts CORDIC_Y_SHIFT + 1, r19
 
-    ; Decis„o de rotaÁ„o baseada no SINAL de Y (r25) [cite: 39]
+    ; Decis√£o de rota√ß√£o baseada no SINAL de Y (r25) [cite: 39]
     lds r25, CORDIC_Y + 1
     sbrc r25, 7
     rjmp vect_positive  ; Se Y < 0, gira positivo
@@ -240,6 +240,15 @@ vect_next:
     rjmp cordic_vect_loop
 
 cordic_vect_done:
+    ; A magnitude do modo vetorial sai escalada por 1/K.
+    ; Multiplicamos por K para voltar a magnitude real em Q2.14.
+    lds r22, CORDIC_X
+    lds r23, CORDIC_X + 1
+    ldi r24, low(CORDIC_GAIN_Q14)
+    ldi r25, high(CORDIC_GAIN_Q14)
+    rcall q214_mul_signed
+    lds r20, CORDIC_Z
+    lds r21, CORDIC_Z + 1
     ret
 
 ; -----------------------------
@@ -400,7 +409,7 @@ cordic_polar_to_rect_q214:
     ret
 
 
-; --- ROTINAS DE ATUALIZA«√O PARA MODO VETORIAL ---
+; --- ROTINAS DE ATUALIZA√á√ÉO PARA MODO VETORIAL ---
 
 update_vect_neg:
     ; x = x + y_shift
@@ -421,13 +430,13 @@ update_vect_neg:
     sbc r25, r19
     sts CORDIC_Y, r24
     sts CORDIC_Y + 1, r25
-    ; z = z - atan
+    ; z = z + atan
     lds r20, CORDIC_Z
     lds r21, CORDIC_Z + 1
     lds r18, CORDIC_ATAN
     lds r19, CORDIC_ATAN + 1
-    sub r20, r18
-    sbc r21, r19
+    add r20, r18
+    adc r21, r19
     sts CORDIC_Z, r20
     sts CORDIC_Z + 1, r21
     ret
@@ -451,13 +460,13 @@ update_vect_pos:
     adc r25, r19
     sts CORDIC_Y, r24
     sts CORDIC_Y + 1, r25
-    ; z = z + atan
+    ; z = z - atan
     lds r20, CORDIC_Z
     lds r21, CORDIC_Z + 1
     lds r18, CORDIC_ATAN
     lds r19, CORDIC_ATAN + 1
-    add r20, r18
-    adc r21, r19
+    sub r20, r18
+    sbc r21, r19
     sts CORDIC_Z, r20
     sts CORDIC_Z + 1, r21
     ret
